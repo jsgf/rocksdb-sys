@@ -1,3 +1,8 @@
+//! Raw binding for RocksDB.
+//!
+//! This is just a thin binding to the RocksDB C API, mostly generated
+//! by rust-bindgen and lightly edited. This is intended to underpin a
+//! higher level library rather than for direct use.
 #![allow(dead_code, non_upper_case_globals, non_camel_case_types)]
 
 #[cfg(test)]
