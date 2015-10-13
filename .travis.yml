@@ -1,0 +1,25 @@
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-4.8
+    - g++-4.9
+    - g++-5
+
+env:
+  - VER=4.8
+
+# 4.9 & 5 get ICE?
+#  - VER=4.9
+#  - VER=5
+
+script:
+  - env CC=gcc-$VER CXX=g++-$VER cargo build --verbose
+  - env CC=gcc-$VER CXX=g++-$VER cargo test --verbose
