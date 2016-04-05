@@ -401,6 +401,8 @@ extern "C" {
                                                                       arg2: c_uchar);
     pub fn rocksdb_block_based_options_set_cache_index_and_filter_blocks(arg1: *mut rocksdb_block_based_table_options_t,
                                                                          arg2: c_uchar);
+    pub fn rocksdb_block_based_options_set_skip_table_builder_flush(arg1: *mut rocksdb_block_based_table_options_t,
+                                                                    arg2: c_uchar);
     pub fn rocksdb_options_set_block_based_table_factory(opt: *mut rocksdb_options_t,
                                                          table_options: *mut rocksdb_block_based_table_options_t);
     pub fn rocksdb_cuckoo_options_create() -> *mut rocksdb_cuckoo_table_options_t;
@@ -508,6 +510,8 @@ extern "C" {
                                                      arg2: size_t);
     pub fn rocksdb_options_set_keep_log_file_num(arg1: *mut rocksdb_options_t,
                                                  arg2: size_t);
+    pub fn rocksdb_options_set_recycle_log_file_num(arg1: *mut rocksdb_options_t,
+                                                    arg2: size_t);
     pub fn rocksdb_options_set_soft_rate_limit(arg1: *mut rocksdb_options_t,
                                                arg2: c_double);
     pub fn rocksdb_options_set_hard_rate_limit(arg1: *mut rocksdb_options_t,
@@ -516,8 +520,6 @@ extern "C" {
                                                                  arg2: c_uint);
     pub fn rocksdb_options_set_max_manifest_file_size(arg1: *mut rocksdb_options_t,
                                                       arg2: size_t);
-    pub fn rocksdb_options_set_no_block_cache(arg1: *mut rocksdb_options_t,
-                                              arg2: c_uchar);
     pub fn rocksdb_options_set_table_cache_numshardbits(arg1: *mut rocksdb_options_t,
                                                         arg2: c_int);
     pub fn rocksdb_options_set_table_cache_remove_scan_count_limit(arg1: *mut rocksdb_options_t,
@@ -550,8 +552,6 @@ extern "C" {
                                                           arg2: c_uchar);
     pub fn rocksdb_options_set_stats_dump_period_sec(arg1: *mut rocksdb_options_t,
                                                      arg2: c_uint);
-    pub fn rocksdb_options_set_block_size_deviation(arg1: *mut rocksdb_options_t,
-                                                    arg2: c_int);
     pub fn rocksdb_options_set_advise_random_on_open(arg1: *mut rocksdb_options_t,
                                                      arg2: c_uchar);
     pub fn rocksdb_options_set_access_hint_on_compaction_start(arg1: *mut rocksdb_options_t,

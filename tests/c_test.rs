@@ -13,7 +13,7 @@
 extern crate libc;
 extern crate rocksdb_sys as ffi;
 
-use self::libc::{c_char, c_int, c_void, size_t};
+use self::libc::{c_char, c_int, c_void, uint64_t, size_t};
 
 use std::{env, mem, ptr, slice};
 use std::ffi::{CStr, CString};
@@ -681,7 +681,7 @@ fn test_ffi() {
 
         StartPhase("approximate_sizes");
         {
-            let mut sizes: [size_t; 2] = [0, 0];
+            let mut sizes: [uint64_t; 2] = [0, 0];
             let startm = vec![cstr("a"), cstr("k00000000000000010000")];
             let start: Vec<*const c_char> = startm.iter().map(|s| s.as_ptr()).collect();
             let start_len: [size_t; 2] = [1, 21];
