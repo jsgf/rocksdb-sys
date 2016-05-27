@@ -9,17 +9,18 @@ addons:
     sources:
     - ubuntu-toolchain-r-test
     packages:
-    - g++-4.8
-    - g++-4.9
     - g++-5
+    - g++-6
+    - libsnappy-dev
+    - zlib1g-dev
+    - libbz2-dev
 
 env:
-  - VER=4.8
-
-# 4.9 & 5 get ICE?
-#  - VER=4.9
-#  - VER=5
+  - CC=gcc-5 CXX=g++-5
+  - CC=gcc-6 CXX=g++-6
 
 script:
-  - env CC=gcc-$VER CXX=g++-$VER cargo build --verbose
-  - env CC=gcc-$VER CXX=g++-$VER cargo test --verbose
+  - $CC -v
+  - $CXX -v
+  - cargo build --verbose -j1
+  - cargo test --verbose -j1

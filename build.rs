@@ -24,7 +24,8 @@ fn main() {
 
     match cmd.output() {
         Ok(out) => if !out.status.success() {
-            let _ = writeln!(&mut stderr, "build failed:\n{}", String::from_utf8(out.stderr).unwrap());
+            let _ = writeln!(&mut stderr, "build failed:\nstdout:\n{}\nstderr:\n{}",
+                            String::from_utf8(out.stdout).unwrap(), String::from_utf8(out.stderr).unwrap());
             exit(1);
         },
         Err(e) => { let _ = writeln!(&mut stderr, "command execution failed: {:?}", e); exit(1) }
