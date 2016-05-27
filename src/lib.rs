@@ -594,6 +594,8 @@ extern "C" {
                                                           arg2: uint32_t);
     pub fn rocksdb_options_set_memtable_prefix_bloom_probes(arg1: *mut rocksdb_options_t,
                                                             arg2: uint32_t);
+    pub fn rocksdb_options_set_memtable_prefix_bloom_huge_page_tlb_size(arg1: *mut rocksdb_options_t,
+                                                                        arg2: size_t);
     pub fn rocksdb_options_set_max_successive_merges(arg1: *mut rocksdb_options_t,
                                                      arg2: size_t);
     pub fn rocksdb_options_set_min_partial_merge_operands(arg1: *mut rocksdb_options_t,
@@ -685,6 +687,7 @@ extern "C" {
                                                                          *const c_char>) -> *mut rocksdb_filterpolicy_t;
     pub fn rocksdb_filterpolicy_destroy(arg1: *mut rocksdb_filterpolicy_t);
     pub fn rocksdb_filterpolicy_create_bloom(bits_per_key: c_int) -> *mut rocksdb_filterpolicy_t;
+    pub fn rocksdb_filterpolicy_create_bloom_full(bits_per_key: c_int) -> *mut rocksdb_filterpolicy_t;
     pub fn rocksdb_mergeoperator_create(state: *mut c_void,
                                         destructor: ::std::option::Option<extern "C" fn(arg1: *mut c_void)
                                                                       -> ()>,
