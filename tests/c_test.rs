@@ -25,24 +25,6 @@ fn cstr(s: &str) -> CString {
     CString::new(s).unwrap()
 }
 
-#[cfg(feature = "cstr_memory")]
-unsafe fn cstrr(s: &str) -> *const c_char {
-    CString::new(s).unwrap().into_ptr()
-}
-#[cfg(not(feature = "cstr_memory"))]
-unsafe fn cstrr(s: &str) -> *const c_char {
-    cstrm(s)
-}
-
-#[cfg(feature = "cstr_to_str")]
-unsafe fn cstrd(s: *const c_char) {
-    CString::from_ptr(s as *mut c_char);
-}
-#[cfg(not(feature = "cstr_to_str"))]
-unsafe fn cstrd(s: *const c_char) {
-    libc::free(s as *mut c_void);
-}
-
 unsafe fn cstrm(s: &str) -> *const c_char {
     let cs = cstr(s);
     let result = libc::malloc(s.len() as size_t);
@@ -406,17 +388,17 @@ fn test_ffi() {
         let mut woptions: *mut rocksdb_writeoptions_t;
         let mut err: *mut c_char = ptr::null_mut();
 
-        let dbname: *const c_char = {
+        let dbname: CString = {
             let mut dir = GetTempDir();
             dir.push(format!("rocksdb_c_test-{}", libc::geteuid()));
             let path = dir.to_str().unwrap();
-            cstrr(path)
+            CString::new(path).unwrap()
         };
-        let dbbackupname: *const c_char = {
+        let dbbackupname: CString = {
             let mut dir = GetTempDir();
             dir.push(format!("rocksdb_c_test-{}-backup", libc::geteuid()));
             let path = dir.to_str().unwrap();
-            cstrr(path)
+            CString::new(path).unwrap()
         };
 
         StartPhase("create_objects");
@@ -458,17 +440,17 @@ fn test_ffi() {
         rocksdb_writeoptions_set_sync(woptions, 1);
 
         StartPhase("destroy");
-        rocksdb_destroy_db(options, dbname, &mut err);
+        rocksdb_destroy_db(options, dbname.as_ptr(), &mut err);
         Free(&mut err);
 
         StartPhase("open_error");
-        rocksdb_open(options, dbname, &mut err);
+        rocksdb_open(options, dbname.as_ptr(), &mut err);
         CheckCondition!(!err.is_null());
         Free(&mut err);
 
         StartPhase("open");
         rocksdb_options_set_create_if_missing(options, 1);
-        db = rocksdb_open(options, dbname, &mut err);
+        db = rocksdb_open(options, dbname.as_ptr(), &mut err);
         CheckNoError!(err);
         CheckGet(db, roptions, "foo", None);
 
@@ -482,12 +464,12 @@ fn test_ffi() {
 
         StartPhase("backup_and_restore");
         {
-            rocksdb_destroy_db(options, dbbackupname, &mut err);
+            rocksdb_destroy_db(options, dbbackupname.as_ptr(), &mut err);
             // FIXME:
             // CheckNoError!(err);
             if !err.is_null() { Free(&mut err); }
 
-            let be = rocksdb_backup_engine_open(options, dbbackupname, &mut err);
+            let be = rocksdb_backup_engine_open(options, dbbackupname.as_ptr(), &mut err);
             CheckNoError!(err);
 
             rocksdb_backup_engine_create_new_backup(be, db, &mut err);
@@ -501,17 +483,17 @@ fn test_ffi() {
 
             rocksdb_close(db);
 
-            rocksdb_destroy_db(options, dbname, &mut err);
+            rocksdb_destroy_db(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
 
             let restore_options = rocksdb_restore_options_create();
             rocksdb_restore_options_set_keep_log_files(restore_options, 0);
-            rocksdb_backup_engine_restore_db_from_latest_backup(be, dbname, dbname, restore_options, &mut err);
+            rocksdb_backup_engine_restore_db_from_latest_backup(be, dbname.as_ptr(), dbname.as_ptr(), restore_options, &mut err);
             CheckNoError!(err);
             rocksdb_restore_options_destroy(restore_options);
 
             rocksdb_options_set_error_if_exists(options, 0);
-            db = rocksdb_open(options, dbname, &mut err);
+            db = rocksdb_open(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
             rocksdb_options_set_error_if_exists(options, 1);
 
@@ -751,9 +733,9 @@ fn test_ffi() {
             rocksdb_close(db);
             rocksdb_options_set_create_if_missing(options, 0);
             rocksdb_options_set_error_if_exists(options, 0);
-            rocksdb_repair_db(options, dbname, &mut err);
+            rocksdb_repair_db(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
-            db = rocksdb_open(options, dbname, &mut err);
+            db = rocksdb_open(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
             CheckGet(db, roptions, "foo", None);
             CheckGet(db, roptions, "bar", None);
@@ -778,9 +760,9 @@ fn test_ffi() {
 
             // Create new database
             rocksdb_close(db);
-            rocksdb_destroy_db(options, dbname, &mut err);
+            rocksdb_destroy_db(options, dbname.as_ptr(), &mut err);
             rocksdb_options_set_block_based_table_factory(options, table_options);
-            db = rocksdb_open(options, dbname, &mut err);
+            db = rocksdb_open(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
             {
                 let k = cstr("foo"); let v = cstr("foovalue");
@@ -820,9 +802,9 @@ fn test_ffi() {
                 Some(CFilterDestroy), Some(CFilterFilter), Some(CFilterName));
             // Create new database
             rocksdb_close(db);
-            rocksdb_destroy_db(options_with_filter, dbname, &mut err);
+            rocksdb_destroy_db(options_with_filter, dbname.as_ptr(), &mut err);
             rocksdb_options_set_compaction_filter(options_with_filter, cfilter);
-            db = rocksdb_open(options_with_filter, dbname, &mut err);
+            db = rocksdb_open(options_with_filter, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
             db = CheckCompaction(db, roptions, woptions);
 
@@ -840,10 +822,10 @@ fn test_ffi() {
                 Some(CFilterFactoryDestroy), Some(CFilterCreate), Some(CFilterFactoryName));
             // Create new database
             rocksdb_close(db);
-            rocksdb_destroy_db(options_with_filter_factory, dbname, &mut err);
+            rocksdb_destroy_db(options_with_filter_factory, dbname.as_ptr(), &mut err);
             rocksdb_options_set_compaction_filter_factory(options_with_filter_factory,
                                                           factory);
-            db = rocksdb_open(options_with_filter_factory, dbname, &mut err);
+            db = rocksdb_open(options_with_filter_factory, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
             db = CheckCompaction(db, roptions, woptions);
 
@@ -863,9 +845,9 @@ fn test_ffi() {
                 Some(MergeOperatorName));
             // Create new database
             rocksdb_close(db);
-            rocksdb_destroy_db(options, dbname, &mut err);
+            rocksdb_destroy_db(options, dbname.as_ptr(), &mut err);
             rocksdb_options_set_merge_operator(options, merge_operator);
-            db = rocksdb_open(options, dbname, &mut err);
+            db = rocksdb_open(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
             {
                 let k = cstr("foo"); let v = cstr("foovalue");
@@ -892,12 +874,12 @@ fn test_ffi() {
         StartPhase("columnfamilies");
         {
             rocksdb_close(db);
-            rocksdb_destroy_db(options, dbname, &mut err);
+            rocksdb_destroy_db(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
 
             let mut db_options = rocksdb_options_create();
             rocksdb_options_set_create_if_missing(db_options, 1);
-            db = rocksdb_open(db_options, dbname, &mut err);
+            db = rocksdb_open(db_options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
             let mut cfh = {
                 let k = cstr("cf1");
@@ -908,7 +890,7 @@ fn test_ffi() {
             rocksdb_close(db);
 
             let mut cflen: size_t = 0;
-            let column_fams_raw = rocksdb_list_column_families(db_options, dbname, &mut cflen, &mut err);
+            let column_fams_raw = rocksdb_list_column_families(db_options, dbname.as_ptr(), &mut cflen, &mut err);
             let column_fams = slice::from_raw_parts(column_fams_raw, cflen as usize);
             CheckNoError!(err);
             {
@@ -928,7 +910,7 @@ fn test_ffi() {
             let cf_names: Vec<*const c_char> = cf_namesm.iter().map(|s| s.as_ptr()).collect();
             let cf_opts: Vec<*mut rocksdb_options_t> = vec![cf_options, cf_options];
             let mut handles: [*mut rocksdb_column_family_handle_t; 2] = [ptr::null_mut(), ptr::null_mut()];
-            db = rocksdb_open_column_families(db_options, dbname, 2,
+            db = rocksdb_open_column_families(db_options, dbname.as_ptr(), 2,
                 cf_names.as_ptr(), cf_opts.as_ptr(), handles.as_mut_ptr(), &mut err);
             CheckNoError!(err);
 
@@ -1020,7 +1002,7 @@ fn test_ffi() {
                 rocksdb_column_family_handle_destroy(handles[i]);
             }
             rocksdb_close(db);
-            rocksdb_destroy_db(options, dbname, &mut err);
+            rocksdb_destroy_db(options, dbname.as_ptr(), &mut err);
             rocksdb_options_destroy(db_options);
             rocksdb_options_destroy(cf_options);
         }
@@ -1033,7 +1015,7 @@ fn test_ffi() {
             rocksdb_options_set_hash_skip_list_rep(options, 5000, 4, 4);
             rocksdb_options_set_plain_table_factory(options, 4, 10, 0.75, 16);
 
-            db = rocksdb_open(options, dbname, &mut err);
+            db = rocksdb_open(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
 
             {
@@ -1088,7 +1070,7 @@ fn test_ffi() {
             rocksdb_iter_destroy(iter);
 
             rocksdb_close(db);
-            rocksdb_destroy_db(options, dbname, &mut err);
+            rocksdb_destroy_db(options, dbname.as_ptr(), &mut err);
         }
 
         StartPhase("cuckoo_options");
@@ -1101,7 +1083,7 @@ fn test_ffi() {
             rocksdb_cuckoo_options_set_use_module_hash(cuckoo_options, 0);
             rocksdb_options_set_cuckoo_table_factory(options, cuckoo_options);
 
-            db = rocksdb_open(options, dbname, &mut err);
+            db = rocksdb_open(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
 
             rocksdb_cuckoo_options_destroy(cuckoo_options);
@@ -1111,11 +1093,11 @@ fn test_ffi() {
         {
             // Create new empty database
             rocksdb_close(db);
-            rocksdb_destroy_db(options, dbname, &mut err);
+            rocksdb_destroy_db(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
 
             rocksdb_options_set_prefix_extractor(options, ptr::null_mut());
-            db = rocksdb_open(options, dbname, &mut err);
+            db = rocksdb_open(options, dbname.as_ptr(), &mut err);
             CheckNoError!(err);
 
             {
@@ -1200,8 +1182,5 @@ fn test_ffi() {
         rocksdb_comparator_destroy(cmp);
         rocksdb_env_destroy(env);
         println!("PASS!");
-
-        cstrd(dbname);
-        cstrd(dbbackupname);
     }
 }
