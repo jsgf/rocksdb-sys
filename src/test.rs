@@ -1,6 +1,7 @@
-use super::*;
 use std::ffi::CString;
 use std::ptr;
+
+use super::*;
 
 #[test]
 fn simple() {
