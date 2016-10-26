@@ -558,34 +558,34 @@ extern "C" {
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub enum rocksdb_block_based_table_index_type_t {
-    binary_search = 0,
-    hash_search = 1,
+    BinarySearch = 0,
+    HashSearch = 1,
 }
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub enum rocksdb_compression_type_t {
-    no = 0,
-    snappy = 1,
-    zlib = 2,
-    bz2 = 3,
-    lz4 = 4,
-    lz4hc = 5,
+    None = 0,
+    Snappy = 1,
+    Zlib = 2,
+    Bz2 = 3,
+    Lz4 = 4,
+    Lz4hc = 5,
 }
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub enum rocksdb_compaction_style_t {
-    level = 0,
-    universal = 1,
-    fifo = 2,
+    Level = 0,
+    Yniversal = 1,
+    Fifo = 2,
 }
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub enum rocksdb_compaction_stop_style_t {
-    similar_size = 0,
-    total_size = 1,
+    SimilarSize = 0,
+    TotalSize = 1,
 }
 
 pub enum rocksdb_t { }
