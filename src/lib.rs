@@ -172,7 +172,7 @@ extern "C" {
 
     pub fn rocksdb_writebatch_put_log_data(batch: *mut rocksdb_writebatch_t, blob: *const c_char, len: size_t);
 
-    pub fn rocksdb_writebatch_iterate(batch: *mut rocksdb_writebatch_t, state: *mut c_void, put: Option<unsafe extern "C" fn(state: *mut c_void, k: *const c_char, klen: size_t, v: *const c_char, vlen: size_t)>, deleted: Option<unsafe extern "C" fn(state: *mut c_void, k: *const c_char, klen: size_t)>);
+    pub fn rocksdb_writebatch_iterate(batch: *mut rocksdb_writebatch_t, state: *mut c_void, put: unsafe extern "C" fn(state: *mut c_void, k: *const c_char, klen: size_t, v: *const c_char, vlen: size_t), deleted: unsafe extern "C" fn(state: *mut c_void, k: *const c_char, klen: size_t));
 
     pub fn rocksdb_writebatch_data(batch: *mut rocksdb_writebatch_t, size: *mut size_t) -> *const c_char;
 
@@ -424,7 +424,7 @@ extern "C" {
 
     pub fn rocksdb_options_set_fifo_compaction_options(opt: *mut rocksdb_options_t, fifo: *mut rocksdb_fifo_compaction_options_t);
 
-    pub fn rocksdb_compactionfilter_create(state: *mut c_void, destructor: Option<unsafe extern "C" fn(state: *mut c_void)>, filter: Option<unsafe extern "C" fn(state: *mut c_void, level: c_int, key: *const c_char, key_length: size_t, existing_value: *const c_char, value_length: size_t, new_value: *mut *mut c_char, new_value_length: *mut size_t, value_changed: *mut c_uchar) -> c_uchar>, name: Option<unsafe extern "C" fn(state: *mut c_void) -> *const c_char>) -> *mut rocksdb_compactionfilter_t;
+    pub fn rocksdb_compactionfilter_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), filter: unsafe extern "C" fn(state: *mut c_void, level: c_int, key: *const c_char, key_length: size_t, existing_value: *const c_char, value_length: size_t, new_value: *mut *mut c_char, new_value_length: *mut size_t, value_changed: *mut c_uchar) -> c_uchar, name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_compactionfilter_t;
 
     pub fn rocksdb_compactionfilter_destroy(filter: *mut rocksdb_compactionfilter_t);
 
@@ -432,15 +432,15 @@ extern "C" {
 
     pub fn rocksdb_compactionfiltercontext_is_manual_compaction(context: *mut rocksdb_compactionfiltercontext_t) -> c_uchar;
 
-    pub fn rocksdb_compactionfilterfactory_create(state: *mut c_void, destructor: Option<unsafe extern "C" fn(state: *mut c_void)>, create_compaction_filter: Option<unsafe extern "C" fn(state: *mut c_void, context: *mut rocksdb_compactionfiltercontext_t) -> *mut rocksdb_compactionfilter_t>, name: Option<unsafe extern "C" fn(state: *mut c_void) -> *const c_char>) -> *mut rocksdb_compactionfilterfactory_t;
+    pub fn rocksdb_compactionfilterfactory_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), create_compaction_filter: unsafe extern "C" fn(state: *mut c_void, context: *mut rocksdb_compactionfiltercontext_t) -> *mut rocksdb_compactionfilter_t, name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_compactionfilterfactory_t;
 
     pub fn rocksdb_compactionfilterfactory_destroy(factory: *mut rocksdb_compactionfilterfactory_t);
 
-    pub fn rocksdb_comparator_create(state: *mut c_void, destructor: Option<unsafe extern "C" fn(state: *mut c_void)>, compare: Option<unsafe extern "C" fn(state: *mut c_void, a: *const c_char, alen: size_t, b: *const c_char, blen: size_t) -> c_int>, name: Option<unsafe extern "C" fn(state: *mut c_void) -> *const c_char>) -> *mut rocksdb_comparator_t;
+    pub fn rocksdb_comparator_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), compare: unsafe extern "C" fn(state: *mut c_void, a: *const c_char, alen: size_t, b: *const c_char, blen: size_t) -> c_int, name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_comparator_t;
 
     pub fn rocksdb_comparator_destroy(cmp: *mut rocksdb_comparator_t);
 
-    pub fn rocksdb_filterpolicy_create(state: *mut c_void, destructor: Option<unsafe extern "C" fn(state: *mut c_void)>, create_filter: Option<unsafe extern "C" fn(state: *mut c_void, key_array: *const *const c_char, key_length_array: *const size_t, num_keys: c_int, filter_length: *mut size_t) -> *mut c_char>, key_may_match: Option<unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t, filter: *const c_char, filter_length: size_t) -> c_uchar>, delete_filter: Option<unsafe extern "C" fn(state: *mut c_void, filter: *const c_char, filter_length: size_t)>, name: Option<unsafe extern "C" fn(state: *mut c_void) -> *const c_char>) -> *mut rocksdb_filterpolicy_t;
+    pub fn rocksdb_filterpolicy_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), create_filter: unsafe extern "C" fn(state: *mut c_void, key_array: *const *const c_char, key_length_array: *const size_t, num_keys: c_int, filter_length: *mut size_t) -> *mut c_char, key_may_match: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t, filter: *const c_char, filter_length: size_t) -> c_uchar, delete_filter: unsafe extern "C" fn(state: *mut c_void, filter: *const c_char, filter_length: size_t), name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_filterpolicy_t;
 
     pub fn rocksdb_filterpolicy_destroy(filter: *mut rocksdb_filterpolicy_t);
 
@@ -448,7 +448,7 @@ extern "C" {
 
     pub fn rocksdb_filterpolicy_create_bloom_full(bits_per_key: c_int) -> *mut rocksdb_filterpolicy_t;
 
-    pub fn rocksdb_mergeoperator_create(state: *mut c_void, destructor: Option<unsafe extern "C" fn(state: *mut c_void)>, full_merge: Option<unsafe extern "C" fn(state: *mut c_void, key: *const c_char, key_length: size_t, existing_value: *const c_char, existing_value_length: size_t, operands_list: *const *const c_char, operands_list_length: *const size_t, num_operands: c_int, success: *mut c_uchar, new_value_length: *mut size_t) -> *mut c_char>, partial_merge: Option<unsafe extern "C" fn(state: *mut c_void, key: *const c_char, key_length: size_t, operands_list: *const *const c_char, operands_list_length: *const size_t, num_operands: c_int, success: *mut c_uchar, new_value_length: *mut size_t) -> *mut c_char>, delete_value: Option<unsafe extern "C" fn(state: *mut c_void, value: *const c_char, value_length: size_t)>, name: Option<unsafe extern "C" fn(state: *mut c_void) -> *const c_char>) -> *mut rocksdb_mergeoperator_t;
+    pub fn rocksdb_mergeoperator_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), full_merge: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, key_length: size_t, existing_value: *const c_char, existing_value_length: size_t, operands_list: *const *const c_char, operands_list_length: *const size_t, num_operands: c_int, success: *mut c_uchar, new_value_length: *mut size_t) -> *mut c_char, partial_merge: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, key_length: size_t, operands_list: *const *const c_char, operands_list_length: *const size_t, num_operands: c_int, success: *mut c_uchar, new_value_length: *mut size_t) -> *mut c_char, delete_value: unsafe extern "C" fn(state: *mut c_void, value: *const c_char, value_length: size_t), name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_mergeoperator_t;
 
     pub fn rocksdb_mergeoperator_destroy(merge_operator: *mut rocksdb_mergeoperator_t);
 
@@ -502,7 +502,7 @@ extern "C" {
 
     pub fn rocksdb_env_destroy(env: *mut rocksdb_env_t);
 
-    pub fn rocksdb_slicetransform_create(state: *mut c_void, destructor: Option<unsafe extern "C" fn(state: *mut c_void)>, transform: Option<unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t, dst_length: *mut size_t) -> *mut c_char>, in_domain: Option<unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t) -> c_uchar>, in_range: Option<unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t) -> c_uchar>, name: Option<unsafe extern "C" fn(state: *mut c_void) -> *const c_char>) -> *mut rocksdb_slicetransform_t;
+    pub fn rocksdb_slicetransform_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), transform: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t, dst_length: *mut size_t) -> *mut c_char, in_domain: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t) -> c_uchar, in_range: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t) -> c_uchar, name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_slicetransform_t;
 
     pub fn rocksdb_slicetransform_create_fixed_prefix(len: size_t) -> *mut rocksdb_slicetransform_t;
 
