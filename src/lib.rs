@@ -8,6 +8,8 @@ mod test;
 use libc::*;
 
 extern "C" {
+    // Database operations
+
     pub fn rocksdb_open(options: *const rocksdb_options_t, name: *const c_char, errptr: *mut *mut c_char) -> *mut rocksdb_t;
 
     pub fn rocksdb_open_for_read_only(options: *const rocksdb_options_t, name: *const c_char, error_if_log_file_exist: c_uchar, errptr: *mut *mut c_char) -> *mut rocksdb_t;
@@ -112,9 +114,13 @@ extern "C" {
 
     pub fn rocksdb_enable_file_deletions(db: *mut rocksdb_t, force: c_uchar, errptr: *mut *mut c_char);
 
+    // Management operations
+
     pub fn rocksdb_destroy_db(options: *const rocksdb_options_t, name: *const c_char, errptr: *mut *mut c_char);
 
     pub fn rocksdb_repair_db(options: *const rocksdb_options_t, name: *const c_char, errptr: *mut *mut c_char);
+
+    // Iterator
 
     pub fn rocksdb_iter_destroy(iterator: *mut rocksdb_iterator_t);
 
@@ -135,6 +141,8 @@ extern "C" {
     pub fn rocksdb_iter_value(iterator: *const rocksdb_iterator_t, vlen: *mut size_t) -> *const c_char;
 
     pub fn rocksdb_iter_get_error(iterator: *const rocksdb_iterator_t, errptr: *mut *mut c_char);
+
+    // Write batch
 
     pub fn rocksdb_writebatch_create() -> *mut rocksdb_writebatch_t;
 
@@ -176,6 +184,8 @@ extern "C" {
 
     pub fn rocksdb_writebatch_data(batch: *mut rocksdb_writebatch_t, size: *mut size_t) -> *const c_char;
 
+    // Block-based table options
+
     pub fn rocksdb_block_based_options_create() -> *mut rocksdb_block_based_table_options_t;
 
     pub fn rocksdb_block_based_options_destroy(options: *mut rocksdb_block_based_table_options_t);
@@ -210,6 +220,8 @@ extern "C" {
 
     pub fn rocksdb_options_set_block_based_table_factory(opt: *mut rocksdb_options_t, table_options: *mut rocksdb_block_based_table_options_t);
 
+    // Cuckoo table options
+
     pub fn rocksdb_cuckoo_options_create() -> *mut rocksdb_cuckoo_table_options_t;
 
     pub fn rocksdb_cuckoo_options_destroy(options: *mut rocksdb_cuckoo_table_options_t);
@@ -225,6 +237,8 @@ extern "C" {
     pub fn rocksdb_cuckoo_options_set_use_module_hash(options: *mut rocksdb_cuckoo_table_options_t, v: c_uchar);
 
     pub fn rocksdb_options_set_cuckoo_table_factory(opt: *mut rocksdb_options_t, table_options: *mut rocksdb_cuckoo_table_options_t);
+
+    // Options
 
     pub fn rocksdb_options_create() -> *mut rocksdb_options_t;
 
@@ -424,21 +438,33 @@ extern "C" {
 
     pub fn rocksdb_options_set_fifo_compaction_options(opt: *mut rocksdb_options_t, fifo: *mut rocksdb_fifo_compaction_options_t);
 
+    // Compaction filter
+
     pub fn rocksdb_compactionfilter_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), filter: unsafe extern "C" fn(state: *mut c_void, level: c_int, key: *const c_char, key_length: size_t, existing_value: *const c_char, value_length: size_t, new_value: *mut *mut c_char, new_value_length: *mut size_t, value_changed: *mut c_uchar) -> c_uchar, name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_compactionfilter_t;
 
+    pub fn rocksdb_compactionfilter_set_ignore_snapshots(filter: *mut rocksdb_compactionfilter_t, v: c_uchar);
+
     pub fn rocksdb_compactionfilter_destroy(filter: *mut rocksdb_compactionfilter_t);
+
+    // Compaction filter context
 
     pub fn rocksdb_compactionfiltercontext_is_full_compaction(context: *mut rocksdb_compactionfiltercontext_t) -> c_uchar;
 
     pub fn rocksdb_compactionfiltercontext_is_manual_compaction(context: *mut rocksdb_compactionfiltercontext_t) -> c_uchar;
 
+    // Compaction filter factory
+
     pub fn rocksdb_compactionfilterfactory_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), create_compaction_filter: unsafe extern "C" fn(state: *mut c_void, context: *mut rocksdb_compactionfiltercontext_t) -> *mut rocksdb_compactionfilter_t, name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_compactionfilterfactory_t;
 
     pub fn rocksdb_compactionfilterfactory_destroy(factory: *mut rocksdb_compactionfilterfactory_t);
 
+    // Comparator
+
     pub fn rocksdb_comparator_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), compare: unsafe extern "C" fn(state: *mut c_void, a: *const c_char, alen: size_t, b: *const c_char, blen: size_t) -> c_int, name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_comparator_t;
 
     pub fn rocksdb_comparator_destroy(cmp: *mut rocksdb_comparator_t);
+
+    // Filter policy
 
     pub fn rocksdb_filterpolicy_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), create_filter: unsafe extern "C" fn(state: *mut c_void, key_array: *const *const c_char, key_length_array: *const size_t, num_keys: c_int, filter_length: *mut size_t) -> *mut c_char, key_may_match: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t, filter: *const c_char, filter_length: size_t) -> c_uchar, delete_filter: unsafe extern "C" fn(state: *mut c_void, filter: *const c_char, filter_length: size_t), name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_filterpolicy_t;
 
@@ -448,9 +474,13 @@ extern "C" {
 
     pub fn rocksdb_filterpolicy_create_bloom_full(bits_per_key: c_int) -> *mut rocksdb_filterpolicy_t;
 
+    // Merge operator
+
     pub fn rocksdb_mergeoperator_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), full_merge: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, key_length: size_t, existing_value: *const c_char, existing_value_length: size_t, operands_list: *const *const c_char, operands_list_length: *const size_t, num_operands: c_int, success: *mut c_uchar, new_value_length: *mut size_t) -> *mut c_char, partial_merge: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, key_length: size_t, operands_list: *const *const c_char, operands_list_length: *const size_t, num_operands: c_int, success: *mut c_uchar, new_value_length: *mut size_t) -> *mut c_char, delete_value: unsafe extern "C" fn(state: *mut c_void, value: *const c_char, value_length: size_t), name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_mergeoperator_t;
 
     pub fn rocksdb_mergeoperator_destroy(merge_operator: *mut rocksdb_mergeoperator_t);
+
+    // Read options
 
     pub fn rocksdb_readoptions_create() -> *mut rocksdb_readoptions_t;
 
@@ -470,6 +500,8 @@ extern "C" {
 
     pub fn rocksdb_readoptions_set_readahead_size(opt: *mut rocksdb_readoptions_t, v: size_t);
 
+    // Write options
+
     pub fn rocksdb_writeoptions_create() -> *mut rocksdb_writeoptions_t;
 
     pub fn rocksdb_writeoptions_destroy(opt: *mut rocksdb_writeoptions_t);
@@ -478,17 +510,23 @@ extern "C" {
 
     pub fn rocksdb_writeoptions_disable_WAL(opt: *mut rocksdb_writeoptions_t, disable: c_int);
 
+    // Flush options
+
     pub fn rocksdb_flushoptions_create() -> *mut rocksdb_flushoptions_t;
 
     pub fn rocksdb_flushoptions_destroy(opt: *mut rocksdb_flushoptions_t);
 
     pub fn rocksdb_flushoptions_set_wait(opt: *mut rocksdb_flushoptions_t, v: c_uchar);
 
+    // Cache
+
     pub fn rocksdb_cache_create_lru(capacity: size_t) -> *mut rocksdb_cache_t;
 
     pub fn rocksdb_cache_destroy(cache: *mut rocksdb_cache_t);
 
     pub fn rocksdb_cache_set_capacity(cache: *mut rocksdb_cache_t, capacity: size_t);
+
+    // Environment
 
     pub fn rocksdb_create_default_env() -> *mut rocksdb_env_t;
 
@@ -502,6 +540,8 @@ extern "C" {
 
     pub fn rocksdb_env_destroy(env: *mut rocksdb_env_t);
 
+    // Slice Transform
+
     pub fn rocksdb_slicetransform_create(state: *mut c_void, destructor: unsafe extern "C" fn(state: *mut c_void), transform: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t, dst_length: *mut size_t) -> *mut c_char, in_domain: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t) -> c_uchar, in_range: unsafe extern "C" fn(state: *mut c_void, key: *const c_char, length: size_t) -> c_uchar, name: unsafe extern "C" fn(state: *mut c_void) -> *const c_char) -> *mut rocksdb_slicetransform_t;
 
     pub fn rocksdb_slicetransform_create_fixed_prefix(len: size_t) -> *mut rocksdb_slicetransform_t;
@@ -509,6 +549,8 @@ extern "C" {
     pub fn rocksdb_slicetransform_create_noop() -> *mut rocksdb_slicetransform_t;
 
     pub fn rocksdb_slicetransform_destroy(st: *mut rocksdb_slicetransform_t);
+
+    // Universal Compaction options
 
     pub fn rocksdb_universal_compaction_options_create() -> *mut rocksdb_universal_compaction_options_t;
 
@@ -545,6 +587,8 @@ extern "C" {
     pub fn rocksdb_livefiles_largestkey(files: *const rocksdb_livefiles_t, index: c_int, size: *mut size_t) -> *const c_char;
 
     pub fn rocksdb_livefiles_destroy(files: *const rocksdb_livefiles_t);
+
+    // Utilities
 
     pub fn rocksdb_get_options_from_string(base_options: *const rocksdb_options_t, opts_str: *const c_char, new_options: *mut rocksdb_options_t, errptr: *mut *mut c_char);
 
