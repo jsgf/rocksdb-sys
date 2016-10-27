@@ -423,7 +423,7 @@ fn test_ffi() {
         rocksdb_block_based_options_set_block_cache(table_options, cache);
         rocksdb_options_set_block_based_table_factory(options, table_options);
 
-        let no_compression = rocksdb_compression_type_t::no;
+        let no_compression = rocksdb_no_compression;
         rocksdb_options_set_compression(options, no_compression);
         rocksdb_options_set_compression_options(options, -14, -1, 0, 0);
         let compression_levels = vec![

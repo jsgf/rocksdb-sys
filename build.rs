@@ -13,7 +13,7 @@ fn main() {
 
     cmd.current_dir(Path::new("rocksdb"))
         .arg("EXTRA_CFLAGS=-fPIC")
-        .arg("EXTRA_CXXFLAGS=-fPIC") // -std=c++11 -stdlib=libstdc++
+        .arg("EXTRA_CXXFLAGS=-fPIC")
         .arg(format!("INSTALL_PATH={}", out_dir));
 
     if let Ok(jobs) = num_jobs {
