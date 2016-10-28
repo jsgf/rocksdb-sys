@@ -1,3 +1,7 @@
+//! Raw bindings for RocksDB.
+//!
+//! This is simply a raw interface to the RocksDB C API. It is intended to underpin a higher-level library rather than for direct use.
+
 #![allow(dead_code, non_camel_case_types, non_upper_case_globals, non_snake_case)]
 
 extern crate libc;
