@@ -20,12 +20,11 @@ fn main() {
         cmd.arg(format!("-j{}", jobs));
     }
 
-    cmd.arg("install-static");
+    cmd.arg("install");
 
     match cmd.output() {
         Ok(out) => if !out.status.success() {
-            let _ = writeln!(&mut stderr, "build failed:\nstdout:\n{}\nstderr:\n{}",
-                            String::from_utf8(out.stdout).unwrap(), String::from_utf8(out.stderr).unwrap());
+            let _ = writeln!(&mut stderr, "build failed:\nstdout:\n{}\nstderr:\n{}", String::from_utf8(out.stdout).unwrap(), String::from_utf8(out.stderr).unwrap());
             exit(1);
         },
         Err(e) => { let _ = writeln!(&mut stderr, "command execution failed: {:?}", e); exit(1) }
@@ -33,7 +32,7 @@ fn main() {
 
     let config = match File::open("rocksdb/make_config.mk") {
         Ok(c) => c,
-        Err(e) => { let _ = writeln!(&mut stderr, "Failed to open rocksdb/make_config.mk: {}", e); exit(1) }
+        Err(e) => { let _ = writeln!(&mut stderr, "Failed to open `rocksdb/make_config.mk`: {}", e); exit(1) }
     };
     let config = BufReader::new(config);
 
@@ -47,21 +46,21 @@ fn main() {
         let words: Vec<_> = line.split_whitespace().collect();
 
         if !words[0].starts_with("PLATFORM_LDFLAGS=") {
-            continue
+            continue;
         }
-        
+
         lz4 = words.iter().any(|w| *w == "-llz4");
         snappy = words.iter().any( |w| *w == "-lsnappy");
         zlib = words.iter().any(|w| *w == "-lz");
         bzip2 = words.iter().any(|w| *w == "-lbz2");
         break;
     }
-    
+
     println!("cargo:rustc-link-search=native={}/lib", out_dir);
-    println!("cargo:rustc-link-lib=static=rocksdb");
-    println!("cargo:rustc-link-lib=stdc++");
+    println!("cargo:rustc-link-lib=rocksdb");
     if lz4 { println!("cargo:rustc-link-lib=lz4"); }
     if snappy { println!("cargo:rustc-link-lib=snappy"); }
     if zlib { println!("cargo:rustc-link-lib=z"); }
     if bzip2 { println!("cargo:rustc-link-lib=bz2"); }
+    println!("cargo:rustc-link-lib=stdc++");
 }

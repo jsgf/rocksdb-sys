@@ -1,8 +1,3 @@
-/*
-   Copyright (c) 2011 The LevelDB Authors. All rights reserved.
-   Use of this source code is governed by a BSD-style license that can be
-   found in the LICENSE file. See the AUTHORS file for names of contributors.
-*/
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
@@ -13,13 +8,13 @@
 extern crate libc;
 extern crate rocksdb_sys as ffi;
 
-use self::libc::{c_char, c_int, c_void, uint64_t, size_t};
-
 use std::{env, mem, ptr, slice};
 use std::ffi::{CStr, CString};
 use std::path::PathBuf;
 
 use ffi::*;
+
+use self::libc::{c_char, c_int, c_void, uint64_t, size_t};
 
 fn cstr(s: &str) -> CString {
     CString::new(s).unwrap()
@@ -38,10 +33,12 @@ unsafe fn rstr(s: *const c_char) -> String {
     }
     rstr_(s)
 }
+
 #[cfg(feature = "cstr_to_str")]
 unsafe fn rstr_(s: *const c_char) -> String {
     CStr::from_ptr(s).to_string_lossy().into_owned()
 }
+
 #[cfg(not(feature = "cstr_to_str"))]
 unsafe fn rstr_(s: *const c_char) -> String {
     String::from(std::str::from_utf8(
@@ -84,11 +81,17 @@ macro_rules! CheckCondition {
 }
 
 fn CheckEqual(expected: *const c_char, v: *const c_char, n: size_t) {
+    unsafe {
+        if !expected.is_null() && !v.is_null() {
+            println!("INFO: {} {}", n, libc::strlen(expected));
+        }
+    }
     if expected.is_null() && v.is_null() {
         // ok
     } else if !expected.is_null() && !v.is_null() && unsafe {
         n == libc::strlen(expected) &&
-        libc::memcmp(expected as *const c_void, v as *const c_void, n) == 0 } {
+        libc::memcmp(expected as *const c_void, v as *const c_void, n) == 0
+    } {
         // ok
     } else {
         unsafe { panic!("{} <> {}", rvstr(expected, n), rvstr(v, n)) };
@@ -118,9 +121,15 @@ fn CheckGet<'a, 'b>(
             &mut val_len, &mut err)
     };
     CheckCondition!(err.is_null());
+    unsafe {
+        let foo1: &[u8] = slice::from_raw_parts(val as *const u8, val_len);
+        let foo2 = std::str::from_utf8(foo1).unwrap();
+        println!("{:?}", foo2);
+    }
     let oexp = expected.map_or(None, |s| Some(cstr(s)));
-    let cexp = oexp.map_or(ptr::null(), |s| s.as_ptr());
+    let cexp = oexp.as_ref().map_or(ptr::null(), |s| s.as_ptr());
     CheckEqual(cexp, val, val_len);
+    println!("EQUAL");
     Free(&mut val);
 }
 
@@ -138,50 +147,46 @@ fn CheckGetCF<'a, 'b>(
             k.as_ptr(), key.len() as size_t, &mut val_len, &mut err);
         CheckNoError!(err);
         let oexp = expected.map_or(None, |s| Some(cstr(s)));
-        let cexp = oexp.map_or(ptr::null(), |s| s.as_ptr());
+        let cexp = oexp.as_ref().map_or(ptr::null(), |s| s.as_ptr());
         CheckEqual(cexp, val, val_len);
         Free(&mut val);
     }
 }
 
 
-fn CheckIter<'a, 'b>(iter: *mut rocksdb_iterator_t,
-             key: &'a str, val: &'b str) {
-  let mut len: size_t = 0;
-  let mut str: *const c_char;
-  str = unsafe { rocksdb_iter_key(iter, &mut len) };
-  { let k = cstr(key); CheckEqual(k.as_ptr(), str, len) };
-  str = unsafe { rocksdb_iter_value(iter, &mut len) };
-  { let v = cstr(val); CheckEqual(v.as_ptr(), str, len) };
+fn CheckIter<'a, 'b>(iter: *mut rocksdb_iterator_t, key: &'a str, val: &'b str) {
+    let mut len: size_t = 0;
+    let mut str: *const c_char;
+    str = unsafe { rocksdb_iter_key(iter, &mut len) };
+    { let k = cstr(key); CheckEqual(k.as_ptr(), str, len) };
+    str = unsafe { rocksdb_iter_value(iter, &mut len) };
+    { let v = cstr(val); CheckEqual(v.as_ptr(), str, len) };
 }
 
 // Callback from rocksdb_writebatch_iterate()
-extern "C" fn CheckPut(ptr: *mut c_void,
-                       k: *const c_char, klen: size_t,
-                       v: *const c_char, vlen: size_t) {
-  let mut state: *mut c_int = ptr as *mut c_int;
-  unsafe {
-    CheckCondition!(*state < 2);
-    match *state {
-        0 => {
-            let l = cstr("bar"); let b = cstr("b");
-            CheckEqual(l.as_ptr(), k, klen);
-            CheckEqual(b.as_ptr(), v, vlen);
+unsafe extern "C" fn CheckPut(ptr: *mut c_void, k: *const c_char, klen: size_t, v: *const c_char, vlen: size_t) {
+    let mut state: *mut c_int = ptr as *mut c_int;
+    unsafe {
+        CheckCondition!(*state < 2);
+        match *state {
+                0 => {
+                        let l = cstr("bar"); let b = cstr("b");
+                        CheckEqual(l.as_ptr(), k, klen);
+                        CheckEqual(b.as_ptr(), v, vlen);
+                }
+                1 => {
+                        let l = cstr("box"); let b = cstr("c");
+                        CheckEqual(l.as_ptr(), k, klen);
+                        CheckEqual(b.as_ptr(), v, vlen);
+                }
+                _ => {}
         }
-        1 => {
-            let l = cstr("box"); let b = cstr("c");
-            CheckEqual(l.as_ptr(), k, klen);
-            CheckEqual(b.as_ptr(), v, vlen);
-        }
-        _ => {}
+        (*state) += 1;
     }
-    (*state) += 1;
-  }
 }
 
 // Callback from rocksdb_writebatch_iterate()
-extern "C" fn CheckDel(ptr: *mut c_void,
-                       k: *const c_char, klen: size_t) {
+unsafe extern "C" fn CheckDel(ptr: *mut c_void, k: *const c_char, klen: size_t) {
     let mut state: *mut c_int = ptr as *mut c_int;
     CheckCondition!(unsafe { *state == 2 });
     let v = cstr("bar");
@@ -189,10 +194,9 @@ extern "C" fn CheckDel(ptr: *mut c_void,
     unsafe { (*state) += 1 };
 }
 
-extern "C" fn cmp_destroy(arg: *mut c_void) {}
+unsafe extern "C" fn cmp_destroy(arg: *mut c_void) {}
 
-extern "C" fn cmp_compare(arg: *mut c_void, a: *const c_char, alen: size_t,
-                                                    b: *const c_char, blen: size_t) -> c_int {
+unsafe extern "C" fn cmp_compare(arg: *mut c_void, a: *const c_char, alen: size_t, b: *const c_char, blen: size_t) -> c_int {
     let n = if alen < blen { alen } else { blen };
     let mut r = unsafe {
         libc::memcmp(a as *const c_void, b as *const c_void, n)
@@ -207,19 +211,19 @@ extern "C" fn cmp_compare(arg: *mut c_void, a: *const c_char, alen: size_t,
     return r;
 }
 
-extern "C" fn cmp_name(arg: *mut c_void) -> *const c_char {
+unsafe extern "C" fn cmp_name(arg: *mut c_void) -> *const c_char {
     const name: &'static [u8] = b"foo\0";
     name.as_ptr() as *const c_char
 }
 
 // Custom filter policy
 static mut fake_filter_result: u8 = 1;
-extern "C" fn FilterDestroy(arg: *mut c_void) { }
-extern "C" fn FilterName(arg: *mut c_void) -> *const c_char {
+unsafe extern "C" fn FilterDestroy(arg: *mut c_void) { }
+unsafe extern "C" fn FilterName(arg: *mut c_void) -> *const c_char {
     const name: &'static [u8] = b"TestFilter\0";
     name.as_ptr() as *const c_char
 }
-extern "C" fn FilterCreate(
+unsafe extern "C" fn FilterCreate(
     arg: *mut c_void,
     key_array: *const *const c_char,
     key_length_array: *const size_t,
@@ -231,7 +235,7 @@ extern "C" fn FilterCreate(
         cstrm("fake") as *mut c_char
     }
 }
-extern "C" fn FilterKeyMatch(
+unsafe extern "C" fn FilterKeyMatch(
     arg: *mut c_void,
     key: *const c_char, length: size_t,
     filter: *const c_char, filter_length: size_t
@@ -248,12 +252,12 @@ extern "C" fn FilterKeyMatch(
 }
 
 // Custom compaction filter
-extern "C" fn CFilterDestroy(arg: *mut c_void) {}
-extern "C" fn CFilterName(arg: *mut c_void) -> *const c_char {
+unsafe extern "C" fn CFilterDestroy(arg: *mut c_void) {}
+unsafe extern "C" fn CFilterName(arg: *mut c_void) -> *const c_char {
     const name: &'static [u8] = b"foo\0";
     name.as_ptr() as *const c_char
 }
-extern "C" fn CFilterFilter(
+unsafe extern "C" fn CFilterFilter(
     arg: *mut c_void,
     level: c_int,
     key: *const c_char,
@@ -285,12 +289,12 @@ extern "C" fn CFilterFilter(
     return 0;
 }
 
-extern "C" fn CFilterFactoryDestroy(arg: *mut c_void) {}
-extern "C" fn CFilterFactoryName(arg: *mut c_void) -> *const c_char {
+unsafe extern "C" fn CFilterFactoryDestroy(arg: *mut c_void) {}
+unsafe extern "C" fn CFilterFactoryName(arg: *mut c_void) -> *const c_char {
     const name: &'static [u8] = b"foo\0";
     name.as_ptr() as *const c_char
 }
-extern "C" fn CFilterCreate(
+unsafe extern "C" fn CFilterCreate(
     arg: *mut c_void, context: *mut rocksdb_compactionfiltercontext_t)
     -> *mut rocksdb_compactionfilter_t {
     unsafe {
@@ -299,7 +303,7 @@ extern "C" fn CFilterCreate(
     }
 }
 
-fn CheckCompaction(db: *mut rocksdb_t,
+unsafe fn CheckCompaction(db: *mut rocksdb_t,
     roptions: *mut rocksdb_readoptions_t,
     woptions: *mut rocksdb_writeoptions_t) -> *mut rocksdb_t {
     unsafe {
@@ -335,12 +339,12 @@ fn CheckCompaction(db: *mut rocksdb_t,
 }
 
 // Custom merge operator
-extern "C" fn MergeOperatorDestroy(arg: *mut c_void) { }
-extern "C" fn MergeOperatorName(arg: *mut c_void) -> *const c_char {
+unsafe extern "C" fn MergeOperatorDestroy(arg: *mut c_void) { }
+unsafe extern "C" fn MergeOperatorName(arg: *mut c_void) -> *const c_char {
     const name: &'static [u8] = b"TestMergeOperator\0";
     name.as_ptr() as *const c_char
 }
-extern "C" fn MergeOperatorFullMerge(
+unsafe extern "C" fn MergeOperatorFullMerge(
     arg: *mut c_void,
     key: *const c_char,
     key_length: size_t,
@@ -358,7 +362,7 @@ extern "C" fn MergeOperatorFullMerge(
         cstrm("fake") as *mut c_char
     }
 }
-extern "C" fn MergeOperatorPartialMerge(
+unsafe extern "C" fn MergeOperatorPartialMerge(
     arg: *mut c_void,
     key: *const c_char,
     key_length: size_t,
@@ -419,9 +423,9 @@ fn test_ffi() {
         rocksdb_block_based_options_set_block_cache(table_options, cache);
         rocksdb_options_set_block_based_table_factory(options, table_options);
 
-        let no_compression = rocksdb_no_compression as c_int;
+        let no_compression = rocksdb_no_compression;
         rocksdb_options_set_compression(options, no_compression);
-        rocksdb_options_set_compression_options(options, -14, -1, 0);
+        rocksdb_options_set_compression_options(options, -14, -1, 0, 0);
         let compression_levels = vec![
             no_compression,
             no_compression,
@@ -908,7 +912,7 @@ fn test_ffi() {
 
             let cf_namesm = vec![cstr("default"), cstr("cf1")];
             let cf_names: Vec<*const c_char> = cf_namesm.iter().map(|s| s.as_ptr()).collect();
-            let cf_opts: Vec<*mut rocksdb_options_t> = vec![cf_options, cf_options];
+            let cf_opts: Vec<*const rocksdb_options_t> = vec![cf_options, cf_options];
             let mut handles: [*mut rocksdb_column_family_handle_t; 2] = [ptr::null_mut(), ptr::null_mut()];
             db = rocksdb_open_column_families(db_options, dbname.as_ptr(), 2,
                 cf_names.as_ptr(), cf_opts.as_ptr(), handles.as_mut_ptr(), &mut err);
