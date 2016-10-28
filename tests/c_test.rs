@@ -421,7 +421,7 @@ fn test_ffi() {
 
         let no_compression = rocksdb_no_compression as c_int;
         rocksdb_options_set_compression(options, no_compression);
-        rocksdb_options_set_compression_options(options, -14, -1, 0);
+        rocksdb_options_set_compression_options(options, -14, -1, 0, 0);
         let compression_levels = vec![
             no_compression,
             no_compression,

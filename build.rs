@@ -14,6 +14,7 @@ fn main() {
     cmd.current_dir(Path::new("rocksdb"))
         .arg("EXTRA_CFLAGS=-fPIC")
         .arg("EXTRA_CXXFLAGS=-fPIC")
+        .arg("DISABLE_JEMALLOC=1")
         .arg(format!("INSTALL_PATH={}", out_dir));
 
     if let Ok(jobs) = num_jobs {
@@ -49,14 +50,14 @@ fn main() {
         if !words[0].starts_with("PLATFORM_LDFLAGS=") {
             continue
         }
-        
+
         lz4 = words.iter().any(|w| *w == "-llz4");
         snappy = words.iter().any( |w| *w == "-lsnappy");
         zlib = words.iter().any(|w| *w == "-lz");
         bzip2 = words.iter().any(|w| *w == "-lbz2");
         break;
     }
-    
+
     println!("cargo:rustc-link-search=native={}/lib", out_dir);
     println!("cargo:rustc-link-lib=static=rocksdb");
     println!("cargo:rustc-link-lib=stdc++");

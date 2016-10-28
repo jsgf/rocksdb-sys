@@ -110,6 +110,9 @@ extern "C" {
     pub fn rocksdb_backup_engine_create_new_backup(be: *mut rocksdb_backup_engine_t,
                                                    db: *mut rocksdb_t,
                                                    errptr: *mut *mut c_char);
+    pub fn rocksdb_backup_engine_purge_old_backups(be: *mut rocksdb_backup_engine_t,
+                                                   num_backups_to_keep: uint32_t,
+                                                   errptr: *mut *mut c_char);
     pub fn rocksdb_restore_options_create() -> *mut rocksdb_restore_options_t;
     pub fn rocksdb_restore_options_destroy(opt: *mut rocksdb_restore_options_t);
     pub fn rocksdb_restore_options_set_keep_log_files(opt: *mut rocksdb_restore_options_t,
@@ -228,6 +231,12 @@ extern "C" {
     pub fn rocksdb_create_iterator_cf(db: *mut rocksdb_t,
                                       options: *const rocksdb_readoptions_t,
                                       column_family: *mut rocksdb_column_family_handle_t) -> *mut rocksdb_iterator_t;
+    pub fn rocksdb_create_iterators(db: *mut rocksdb_t,
+                                    opts: *const rocksdb_readoptions_t,
+                                    column_families: *mut *mut rocksdb_column_family_handle_t,
+                                    iterators: *mut *mut rocksdb_iterator_t,
+                                    size: size_t,
+                                    errptr: *mut *mut c_char);
     pub fn rocksdb_create_snapshot(db: *mut rocksdb_t) -> *const rocksdb_snapshot_t;
     pub fn rocksdb_release_snapshot(db: *mut rocksdb_t,
                                     snapshot: *const rocksdb_snapshot_t);
@@ -403,6 +412,8 @@ extern "C" {
                                                                       arg2: c_uchar);
     pub fn rocksdb_block_based_options_set_cache_index_and_filter_blocks(arg1: *mut rocksdb_block_based_table_options_t,
                                                                          arg2: c_uchar);
+    pub fn rocksdb_block_based_options_set_pin_l0_filter_and_index_blocks_in_cache(arg1: *mut rocksdb_block_based_table_options_t,
+                                                                                    arg2: c_uchar);
     pub fn rocksdb_block_based_options_set_skip_table_builder_flush(arg1: *mut rocksdb_block_based_table_options_t,
                                                                     arg2: c_uchar);
     pub fn rocksdb_options_set_block_based_table_factory(opt: *mut rocksdb_options_t,
@@ -435,6 +446,8 @@ extern "C" {
                                                  arg2: *mut rocksdb_compactionfilter_t);
     pub fn rocksdb_options_set_compaction_filter_factory(arg1: *mut rocksdb_options_t,
                                                          arg2: *mut rocksdb_compactionfilterfactory_t);
+    pub fn rocksdb_options_compaction_readahead_size(arg1: *mut rocksdb_options_t,
+                                                     arg2: size_t);
     pub fn rocksdb_options_set_comparator(arg1: *mut rocksdb_options_t,
                                           arg2: *mut rocksdb_comparator_t);
     pub fn rocksdb_options_set_merge_operator(arg1: *mut rocksdb_options_t,
@@ -459,6 +472,8 @@ extern "C" {
                                               arg2: c_int);
     pub fn rocksdb_options_set_write_buffer_size(arg1: *mut rocksdb_options_t,
                                                  arg2: size_t);
+    pub fn rocksdb_options_set_db_write_buffer_size(arg1: *mut rocksdb_options_t,
+                                                    arg2: size_t);
     pub fn rocksdb_options_set_max_open_files(arg1: *mut rocksdb_options_t,
                                               arg2: c_int);
     pub fn rocksdb_options_set_max_total_wal_size(opt: *mut rocksdb_options_t,
@@ -466,7 +481,8 @@ extern "C" {
     pub fn rocksdb_options_set_compression_options(arg1: *mut rocksdb_options_t,
                                                    arg2: c_int,
                                                    arg3: c_int,
-                                                   arg4: c_int);
+                                                   arg4: c_int,
+                                                   arg5: c_int);
     pub fn rocksdb_options_set_prefix_extractor(arg1: *mut rocksdb_options_t,
                                                 arg2: *mut rocksdb_slicetransform_t);
     pub fn rocksdb_options_set_num_levels(arg1: *mut rocksdb_options_t,
@@ -594,8 +610,8 @@ extern "C" {
                                                           arg2: uint32_t);
     pub fn rocksdb_options_set_memtable_prefix_bloom_probes(arg1: *mut rocksdb_options_t,
                                                             arg2: uint32_t);
-    pub fn rocksdb_options_set_memtable_prefix_bloom_huge_page_tlb_size(arg1: *mut rocksdb_options_t,
-                                                                        arg2: size_t);
+    pub fn rocksdb_options_set_memtable_huge_page_size(arg1: *mut rocksdb_options_t,
+                                                       arg2: size_t);
     pub fn rocksdb_options_set_max_successive_merges(arg1: *mut rocksdb_options_t,
                                                      arg2: size_t);
     pub fn rocksdb_options_set_min_partial_merge_operands(arg1: *mut rocksdb_options_t,
@@ -606,6 +622,8 @@ extern "C" {
                                                       arg2: c_uchar);
     pub fn rocksdb_options_set_inplace_update_num_locks(arg1: *mut rocksdb_options_t,
                                                         arg2: size_t);
+    pub fn rocksdb_options_set_report_bg_io_stats(arg1: *mut rocksdb_options_t,
+                                                  arg2: c_int);
     pub fn rocksdb_options_set_compression(arg1: *mut rocksdb_options_t,
                                            arg2: c_int);
     pub fn rocksdb_options_set_compaction_style(arg1: *mut rocksdb_options_t,
@@ -736,6 +754,8 @@ extern "C" {
                                              arg2: c_int);
     pub fn rocksdb_readoptions_set_tailing(arg1: *mut rocksdb_readoptions_t,
                                            arg2: c_uchar);
+    pub fn rocksdb_readoptions_set_readahead_size(arg1: *mut rocksdb_readoptions_t,
+                                                  arg2: size_t);
     pub fn rocksdb_writeoptions_create() -> *mut rocksdb_writeoptions_t;
     pub fn rocksdb_writeoptions_destroy(arg1: *mut rocksdb_writeoptions_t);
     pub fn rocksdb_writeoptions_set_sync(arg1: *mut rocksdb_writeoptions_t,
@@ -748,7 +768,9 @@ extern "C" {
                                          arg2: c_uchar);
     pub fn rocksdb_cache_create_lru(capacity: size_t) -> *mut rocksdb_cache_t;
     pub fn rocksdb_cache_destroy(cache: *mut rocksdb_cache_t);
+    pub fn rocksdb_cache_set_capacity(cache: *mut rocksdb_cache_t, capacity: size_t);
     pub fn rocksdb_create_default_env() -> *mut rocksdb_env_t;
+    pub fn rocksdb_create_mem_env() -> *mut rocksdb_env_t;
     pub fn rocksdb_env_set_background_threads(env: *mut rocksdb_env_t,
                                               n: c_int);
     pub fn rocksdb_env_set_high_priority_background_threads(env: *mut rocksdb_env_t,
@@ -815,6 +837,19 @@ extern "C" {
     pub fn rocksdb_get_options_from_string(base_options: *const rocksdb_options_t,
                                            opts_str: *const c_char,
                                            new_options: *mut rocksdb_options_t,
+                                           errptr: *mut *mut c_char);
+    pub fn rocksdb_delete_file_in_range(db: *mut rocksdb_t,
+                                        start_key: *const c_char,
+                                        start_key_len: size_t,
+                                        limit_key: *const c_char,
+                                        limit_key_len: size_t,
+                                        errptr: *mut *mut c_char);
+    pub fn rocksdb_delete_file_in_range_cf(db: *mut rocksdb_t,
+                                           column_family: *mut rocksdb_column_family_handle_t,
+                                           start_key: *const c_char,
+                                           start_key_len: size_t,
+                                           limit_key: *const c_char,
+                                           limit_key_len: size_t,
                                            errptr: *mut *mut c_char);
     pub fn rocksdb_free(ptr: *mut c_void);
 }
